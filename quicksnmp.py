@@ -2,17 +2,14 @@ from pysnmp import hlapi
 
 
 def construct_object_types(list_of_oids):
-    object_types = []
-    for oid in list_of_oids:
-        object_types.append(hlapi.ObjectType(hlapi.ObjectIdentity(oid)))
-    return object_types
+    return [hlapi.ObjectType(hlapi.ObjectIdentity(oid)) for oid in list_of_oids]
 
 
 def construct_value_pairs(list_of_pairs):
-    pairs = []
-    for key, value in list_of_pairs.items():
-        pairs.append(hlapi.ObjectType(hlapi.ObjectIdentity(key), value))
-    return pairs
+    return [
+        hlapi.ObjectType(hlapi.ObjectIdentity(key), value)
+        for key, value in list_of_pairs.items()
+    ]
 
 
 def get(target, oids, credentials, port=161, engine=hlapi.SnmpEngine(), context=hlapi.ContextData()):
@@ -72,16 +69,13 @@ def cast(value):
 
 def fetch(handler, count):
     result = []
-    for i in range(count):
+    for _ in range(count):
         try:
             error_indication, error_status, error_index, var_binds = next(handler)
-            if not error_indication and not error_status:
-                items = {}
-                for var_bind in var_binds:
-                    items[str(var_bind[0])] = cast(var_bind[1])
-                result.append(items)
-            else:
+            if error_indication or error_status:
                 raise RuntimeError('Got SNMP error: {0}'.format(error_indication))
+            items = {str(var_bind[0]): cast(var_bind[1]) for var_bind in var_binds}
+            result.append(items)
         except StopIteration:
             break
     return result
