@@ -63,17 +63,16 @@ def main(argv):
                 # print(links)
                 for link in links: # Iterate results (should be a list of tupples)
                     for k, v in link.items(): # iterate the tupples
-                        if isinstance(v, str): # If this result is a string (Interface description)
-                            if 'LAN' == v[:3]: # If the description starts with LAN (ePMP have WLAN and LAN)
-                                oids = k.split('.') # Split the OID listing to get the index
-                                snmpIndex = list.pop(oids) # save the index for future runs
-                                break # Jump out of the loop
+                        if isinstance(v, str) and v[:3] == 'LAN': # If the description starts with LAN (ePMP have WLAN and LAN)
+                            oids = k.split('.') # Split the OID listing to get the index
+                            snmpIndex = list.pop(oids) # save the index for future runs
+                            break # Jump out of the loop
                     if snmpIndex != '': # If we found the index
                         updown = link['1.3.6.1.2.1.2.2.1.8.{}'.format(snmpIndex)] # Get the current link state
                         break # Stop running through the loop of links
             else: # If we already know the index of the interface
                 updown = quicksnmp.get(checkip, ['1.3.6.1.2.1.2.2.1.8.{}'.format(snmpIndex)], hlapi.CommunityData(snmpCommunity))['1.3.6.1.2.1.2.2.1.8.{}'.format(snmpIndex)] # Get the link state
-            
+
             with open('snmplog.txt', 'a') as f: # open the log file for writing and print/log the output
                 if updown == 1:
                     print('Link is Up')
@@ -84,7 +83,7 @@ def main(argv):
                 else: # Catch all for various optional states in the MIB
                     print('Link unknown')
                     f.write('{} - Link is UNKNOWN\n'.format(datetime.now()))
-        elif z and not y: # If we pinged, but the last one failed
+        elif not y: # If we pinged, but the last one failed
             if pcount > 9: # if it failed more than 9 times, break the loop to stop the program
                 x = False
             else: # otherwise restart the counter and keep going
